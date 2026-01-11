@@ -6,9 +6,12 @@ import (
 	"pomogator/internal/bot"
 )
 
+const (
+	tg_host = "api.telegram.org"
+)
+
 func main() {
-	token := mustToken
-	b := bot.New(_, token)
+	b := bot.New(tg_host, mustToken())
 }
 
 func mustToken() string {

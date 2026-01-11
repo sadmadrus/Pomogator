@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,6 +17,11 @@ type Client struct {
 	Client   http.Client
 }
 
+const (
+	getUpdatesMethod  = "getUpdates"
+	sendMessageMethod = "senMessage"
+)
+
 func New(host string, token string) Client {
 	return Client{
 		host:     host,
@@ -28,11 +34,34 @@ func newBasePath(token string) string {
 	return "bot" + token
 }
 
-func (c *Client) Updates(offset int, limit int) (Updates, error) {
+func (c *Client) Updates(offset int, limit int) (update []Updates, err error) {
 	q := url.Values{}
 	q.Add("offset", strconv.Itoa(offset))
 	q.Add("limit", strconv.Itoa(limit))
 
+	data, err := c.doRequest(getUpdatesMethod, q)
+
+	if err != nil {
+		return nil, err
+	}
+	var res UpdateResponse
+
+	if err := json.Unmarshal(data, &res); err != nil {
+		return nil, err
+	}
+	return res.Result, err
+}
+
+func (c *Client) SendMessage(chatId int, text string) error {
+	q := url.Values{}
+
+	q.Add("chat_Id", strconv.Itoa(chatId))
+	q.Add("text", text)
+	_, err := c.doRequest(sendMessageMethod, q)
+	if err != nil {
+		return e.Wrap("can`t send message", err)
+	}
+	return nil
 }
 
 func (c *Client) doRequest(method string, query url.Values) ([]byte, error) {
@@ -60,8 +89,4 @@ func (c *Client) doRequest(method string, query url.Values) ([]byte, error) {
 		return nil, err
 	}
 	return body, err
-}
-
-func (c *Client) SendMessage() {
-
 }
